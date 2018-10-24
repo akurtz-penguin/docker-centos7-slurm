@@ -31,6 +31,8 @@ if [ ! -d "/var/lib/mysql/slurm_acct_db" ]; then
     mysql -NBe "SET PASSWORD for 'slurm'@'localhost' = password('password')"
     mysql -NBe "GRANT USAGE ON *.* to 'slurm'@'localhost'"
     mysql -NBe "GRANT ALL PRIVILEGES on slurm_acct_db.* to 'slurm'@'localhost'"
+    mysql -NBe "CREATE DATABASE podtools"
+    mysql -NBe "GRANT ALL PRIVILEGES on podtools.* to 'pod'@'localhost' IDENTIFIED BY 'pod'"
     mysql -NBe "FLUSH PRIVILEGES"
     echo "- Slurm acct database created. Stopping MariaDB"
     killall mysqld
@@ -49,7 +51,15 @@ fi
 
 chown slurm:slurm /var/spool/slurmd /var/run/slurmd /var/lib/slurmd /var/log/slurm
 
-echo "- Starting all Slurm processes under supervisord"
+echo "- Starting all Slurm processes except slurmctld under supervisord"
 /usr/bin/supervisord --configuration /etc/supervisord.conf
+
+echo "- Adding linux cluster to slurm accounting"
+#until 2>/dev/null >/dev/tcp/localhost/6819 ; do sleep 1; done
+until 2>/dev/null >/dev/tcp/localhost/6819; do sleep 1; done && /usr/bin/sacctmgr -i add cluster linux
+#/usr/bin/sacctmgr -i add cluster linux
+
+echo "- Start slurmctld"
+supervisorctl start slurmctld
 
 exec "$@"

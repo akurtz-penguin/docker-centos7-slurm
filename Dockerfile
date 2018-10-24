@@ -1,13 +1,7 @@
 FROM centos:7
 
-LABEL org.label-schema.vcs-url="https://github.com/giovtorres/docker-centos7-slurm" \
-      org.label-schema.docker.cmd="docker run -it -h ernie giovtorres/docker-centos7-slurm:latest" \
-      org.label-schema.name="docker-centos7-slurm" \
-      org.label-schema.description="Slurm All-in-one Docker container on CentOS 7" \
-      maintainer="Giovanni Torres"
-
 ARG SLURM_TAG=slurm-18-08-2-1
-ARG PYTHON_VERSIONS="2.6 2.7 3.4 3.5 3.6"
+ARG PYTHON_VERSIONS="2.7 3.4"
 
 RUN yum makecache fast \
     && yum -y install epel-release \
@@ -23,12 +17,15 @@ RUN yum makecache fast \
         git \
         glibc-devel \
         gmp-devel \
+	httpd-devel \
         libffi-devel \
         libGL-devel \
         libX11-devel \
         make \
         mariadb-server \
         mariadb-devel \
+	mod_ssl \
+	mod_wsgi \
         munge \
         munge-devel \
         ncurses-devel \
@@ -39,9 +36,11 @@ RUN yum makecache fast \
         psmisc \
         python-devel \
         python-pip \
+	python-virtualenv \
         python34 \
         python34-devel \
         python34-pip \
+	python34-virtualenv \
         readline-devel \
         sqlite-devel \
         tcl-devel \
@@ -52,39 +51,8 @@ RUN yum makecache fast \
         wget \
         vim-enhanced \
         zlib-devel \
-    && yum -y install https://centos7.iuscommunity.org/ius-release.rpm \
-    && yum -y install \
-        python35u \
-        python35u-devel \
-        python35u-pip \
-        python36u \
-        python36u-devel \
-        python36u-pip \
     && yum clean all \
     && rm -rf /var/cache/yum
-
-RUN set -x \
-    && wget https://www.python.org/ftp/python/2.6.9/Python-2.6.9.tgz \
-    && tar xzf Python-2.6.9.tgz \
-    && pushd Python-2.6.9 \
-    && export CFLAGS="-D_GNU_SOURCE -fPIC -fwrapv" \
-    && export CXXFLAGS="-D_GNU_SOURCE -fPIC -fwrapv" \
-    && export OPT="-D_GNU_SOURCE -fPIC -fwrapv" \
-    && export LINKCC="gcc" \
-    && export CC="gcc" \
-    && ./configure --enable-ipv6 --enable-unicode=ucs4 --enable-shared --with-system-ffi \
-    && make install \
-    && unset CFLAGS CXXFLAGS OPT LINKCC CC \
-    && popd \
-    && rm -rf Python-2.6.9 \
-    && echo "/usr/local/lib" >> /etc/ld.so.conf.d/python-2.6.conf \
-    && chmod 0644 /etc/ld.so.conf.d/python-2.6.conf \
-    && /sbin/ldconfig \
-    && wget https://bootstrap.pypa.io/2.6/get-pip.py \
-    && /usr/local/bin/python2.6 get-pip.py \
-    && rm -f get-pip.py Python-2.6.9.tgz
-
-RUN for version in $PYTHON_VERSIONS; do pip$version install Cython nose; done
 
 RUN set -x \
     && git clone https://github.com/SchedMD/slurm.git \
